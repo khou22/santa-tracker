@@ -1,0 +1,5 @@
+{
+  "name": "Santa's AI Sleigh Tracker",
+  "description": "Plan Santa's route using AI! Add locations and presents, let Gemini optimize the path, and watch Santa deliver gifts on an interactive map.",
+  "requestFramePermissions": []
+}
