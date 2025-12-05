@@ -462,16 +462,15 @@ const App: React.FC = () => {
                                         type="button"
                                         onClick={handleSurpriseMe}
                                         disabled={loading}
-                                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                        title="Use current location & random gift"
+                                        className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Surprise Me! (Use current location & random gift)"
                                     >
-                                        <Wand2 size={16} />
-                                        Surprise Me
+                                        <Wand2 size={20} />
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading || !locationInput || !presentInput}
-                                        className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {loading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
                                         Add Stop
