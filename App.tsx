@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MapComponent from './components/MapComponent';
 import SnowOverlay from './components/SnowOverlay';
-import { geocodeLocation, optimizeRoute, generateArrivalMessage, generateDeliveryImage } from './services/geminiService';
+import { geocodeLocation, optimizeRoute, generateArrivalMessage, generateDeliveryImage, reverseGeocode } from './services/geminiService';
 import { playSparkleSound, playHoHoHo, playArrivalChime } from './services/audioService';
 import { Stop, SantaState, GameStatus, Coordinates } from './types';
 import { NORTH_POLE } from './constants';
-import { MapPin, Gift, Play, RotateCcw, Plus, Loader2, Sparkles, Navigation, Volume2, Check, X, FastForward, Camera, ArrowRight } from 'lucide-react';
+import { MapPin, Gift, Play, RotateCcw, Plus, Loader2, Sparkles, Navigation, Volume2, Check, X, FastForward, Camera, ArrowRight, Wand2 } from 'lucide-react';
+import { POPULAR_PRESENTS_2025 } from './constants/presents';
 
 const App: React.FC = () => {
     // State
@@ -69,6 +70,45 @@ const App: React.FC = () => {
             setCurrentMessage(`Could not find location "${locationInput}". Try "City, Country" format.`);
         }
         setLoading(false);
+    };
+
+    const handleSurpriseMe = async () => {
+        setLoading(true);
+        setCurrentMessage("Consulting the elves for a surprise...");
+
+        try {
+            // 1. Get Current Location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    // 2. Reverse Geocode
+                    const locationName = await reverseGeocode(latitude, longitude);
+                    if (locationName) {
+                        setLocationInput(locationName);
+                    } else {
+                        setLocationInput(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                    }
+
+                    // 3. Pick Random Present
+                    const randomPresent = POPULAR_PRESENTS_2025[Math.floor(Math.random() * POPULAR_PRESENTS_2025.length)];
+                    setPresentInput(randomPresent);
+
+                    setCurrentMessage("Surprise ready! Click 'Add Stop' to confirm.");
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Geolocation error:", error);
+                    setCurrentMessage("Could not get your location. Check permissions.");
+                    setLoading(false);
+                });
+            } else {
+                setCurrentMessage("Geolocation is not supported by this browser.");
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Surprise me error:", error);
+            setLoading(false);
+        }
     };
 
     const handleOptimize = async () => {
@@ -417,14 +457,26 @@ const App: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading || !locationInput || !presentInput}
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                    Add Stop
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSurpriseMe}
+                                        disabled={loading}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                        title="Use current location & random gift"
+                                    >
+                                        <Wand2 size={16} />
+                                        Surprise Me
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !locationInput || !presentInput}
+                                        className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                        Add Stop
+                                    </button>
+                                </div>
                             </form>
                         ) : (
                             <div className="text-center py-4">

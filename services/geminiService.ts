@@ -32,15 +32,32 @@ export const geocodeLocation = async (locationName: string): Promise<{ lat: numb
     const data = JSON.parse(response.text || "{}");
     // Explicitly check for number type and finite value to avoid NaN errors
     if (
-        data.found && 
-        typeof data.lat === 'number' && Number.isFinite(data.lat) && 
-        typeof data.lng === 'number' && Number.isFinite(data.lng)
+      data.found &&
+      typeof data.lat === 'number' && Number.isFinite(data.lat) &&
+      typeof data.lng === 'number' && Number.isFinite(data.lng)
     ) {
       return { lat: data.lat, lng: data.lng, formattedName: data.formattedName };
     }
     return null;
   } catch (error) {
     console.error("Geocoding error:", error);
+    return null;
+  }
+};
+
+/**
+ * Uses Gemini to convert coordinates into a location name.
+ */
+export const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `What is the city and country for these coordinates: ${lat}, ${lng}? Return ONLY the "City, Country" format.`,
+    });
+
+    return response.text ? response.text.trim() : null;
+  } catch (error) {
+    console.error("Reverse geocoding error:", error);
     return null;
   }
 };
@@ -53,7 +70,7 @@ export const optimizeRoute = async (stops: Stop[]): Promise<string[]> => {
 
   try {
     const stopsList = stops.map(s => ({ id: s.id, name: s.name, coords: s.coordinates }));
-    
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `I have a list of locations for Santa to visit starting from the North Pole (approx lat 85, lng 0). 
@@ -88,19 +105,19 @@ export const optimizeRoute = async (stops: Stop[]): Promise<string[]> => {
  * Generates a fun Christmas-themed status message based on the location and present.
  */
 export const generateArrivalMessage = async (location: string, present: string): Promise<string> => {
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Write a very short, witty one-sentence status update for Santa arriving at ${location} to deliver ${present}. Use emojis.`,
-            config: {
-                // Removed maxOutputTokens to avoid conflict with potential thinking budget usage
-                temperature: 0.9
-            }
-        });
-        return response.text || `Santa has arrived at ${location}!`;
-    } catch (e) {
-        return `Santa has arrived at ${location}!`;
-    }
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Write a very short, witty one-sentence status update for Santa arriving at ${location} to deliver ${present}. Use emojis.`,
+      config: {
+        // Removed maxOutputTokens to avoid conflict with potential thinking budget usage
+        temperature: 0.9
+      }
+    });
+    return response.text || `Santa has arrived at ${location}!`;
+  } catch (e) {
+    return `Santa has arrived at ${location}!`;
+  }
 }
 
 /**
