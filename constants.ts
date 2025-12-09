@@ -6,4 +6,4 @@ export const NORTH_POLE: Coordinates = {
   lng: -40.0 // Slightly off true north for better visual starting point on Mercator maps
 };
 
-export const DEFAULT_ZOOM = 3;
+export const DEFAULT_ZOOM = 2;

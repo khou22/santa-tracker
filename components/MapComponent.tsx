@@ -2,11 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Stop, Coordinates, SantaState } from '../types';
-import { NORTH_POLE } from '../constants';
+import { DEFAULT_ZOOM, NORTH_POLE } from '../constants';
 
 // Helper to prevent Leaflet crashes
 const isValidCoordinate = (coord: Coordinates | null | undefined): boolean => {
-    return !!coord && typeof coord.lat === 'number' && !isNaN(coord.lat) && typeof coord.lng === 'number' && !isNaN(coord.lng);
+  return !!coord && typeof coord.lat === 'number' && !isNaN(coord.lat) && typeof coord.lng === 'number' && !isNaN(coord.lng);
 };
 
 // Custom Icons
@@ -16,7 +16,7 @@ const createCustomIcon = (type: 'santa' | 'house' | 'delivered' | 'pole', rotati
   let iconSize: [number, number] = [32, 32];
   let iconAnchor: [number, number] = [16, 16];
 
-  switch(type) {
+  switch (type) {
     case 'santa':
       // SVG pointing UP (North) by default.
       // Rotation: 0 deg = North, 90 deg = East, 180 = South
@@ -73,7 +73,7 @@ const createCustomIcon = (type: 'santa' | 'house' | 'delivered' | 'pole', rotati
     className,
     iconSize,
     iconAnchor,
-    popupAnchor: [0, -iconSize[1]/2]
+    popupAnchor: [0, -iconSize[1] / 2]
   });
 };
 
@@ -89,19 +89,24 @@ const MapController: React.FC<{ center: Coordinates, isPlaying: boolean }> = ({ 
     // Safety check to prevent crash if center is invalid
     if (!isValidCoordinate(center)) return;
 
+    // Don't animate the initial centering
+    if (center.lat === NORTH_POLE.lat && center.lng === NORTH_POLE.lng) {
+      return;
+    }
+
     // Use panTo for smoother frame-by-frame updates during playback, flyTo for longer jumps
     if (isPlaying) {
-        map.setView([center.lat, center.lng], map.getZoom(), { animate: false });
+      map.setView([center.lat, center.lng], map.getZoom(), { animate: false });
     } else {
-        // When stopping (arriving), we fly to the location to center it nicely
-        map.flyTo([center.lat, center.lng], map.getZoom(), { animate: true, duration: 1.0 });
+      // When stopping (arriving), we fly to the location to center it nicely
+      map.flyTo([center.lat, center.lng], map.getZoom(), { animate: true, duration: 1.0 });
     }
   }, [center, map, isPlaying]);
   return null;
 };
 
 const MapComponent: React.FC<MapComponentProps> = ({ stops, santa }) => {
-  
+
   // Filter valid stops for the route line
   const routePositions = [
     [NORTH_POLE.lat, NORTH_POLE.lng],
@@ -116,40 +121,42 @@ const MapComponent: React.FC<MapComponentProps> = ({ stops, santa }) => {
 
   // Validate current position before calculation
   if (isValidCoordinate(santa.currentPosition) && isValidCoordinate(prevPosRef.current)) {
-      const latDiff = santa.currentPosition.lat - prevPosRef.current.lat;
-      const lngDiff = santa.currentPosition.lng - prevPosRef.current.lng;
-      
-      // Calculate rotation only if moving.
-      if (Math.abs(latDiff) > 0.000001 || Math.abs(lngDiff) > 0.000001) {
-          const angle = Math.atan2(lngDiff, latDiff) * (180 / Math.PI); 
-          rotationRef.current = angle;
-      }
+    const latDiff = santa.currentPosition.lat - prevPosRef.current.lat;
+    const lngDiff = santa.currentPosition.lng - prevPosRef.current.lng;
+
+    // Calculate rotation only if moving.
+    if (Math.abs(latDiff) > 0.000001 || Math.abs(lngDiff) > 0.000001) {
+      const angle = Math.atan2(lngDiff, latDiff) * (180 / Math.PI);
+      rotationRef.current = angle;
+    }
   }
-  
+
   // Update ref for next frame comparison
   useEffect(() => {
     if (isValidCoordinate(santa.currentPosition)) {
-        prevPosRef.current = santa.currentPosition;
+      prevPosRef.current = santa.currentPosition;
     }
   }, [santa.currentPosition]);
 
 
   return (
-    <MapContainer 
-      center={[NORTH_POLE.lat, NORTH_POLE.lng]} 
-      zoom={3} 
+    <MapContainer
+      center={[NORTH_POLE.lat, NORTH_POLE.lng]}
+      zoom={DEFAULT_ZOOM}
       style={{ height: '100%', width: '100%' }}
       zoomControl={false}
+      maxBounds={[[-85, -180], [85, 180]]}
+      maxBoundsViscosity={1}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
-      
+
       {/* Route Line */}
-      <Polyline 
-        positions={routePositions} 
-        pathOptions={{ color: '#ef4444', weight: 3, dashArray: '10, 10', opacity: 0.5, lineCap: 'round' }} 
+      <Polyline
+        positions={routePositions}
+        pathOptions={{ color: '#ef4444', weight: 3, dashArray: '10, 10', opacity: 0.5, lineCap: 'round' }}
       />
 
       {/* North Pole */}
@@ -161,36 +168,36 @@ const MapComponent: React.FC<MapComponentProps> = ({ stops, santa }) => {
       {stops
         .filter(stop => isValidCoordinate(stop.coordinates))
         .map(stop => (
-            <Marker 
-            key={stop.id} 
+          <Marker
+            key={stop.id}
             position={[stop.coordinates.lat, stop.coordinates.lng]}
             icon={createCustomIcon(stop.isDelivered ? 'delivered' : 'house')}
-            >
+          >
             <Popup>
-                <div className="text-center p-2">
+              <div className="text-center p-2">
                 <p className="font-bold text-gray-800 text-lg">{stop.name}</p>
                 <div className="flex items-center justify-center gap-1 text-gray-600 mt-1">
-                    <span>🎁</span> <span className="text-sm">{stop.present}</span>
+                  <span>🎁</span> <span className="text-sm">{stop.present}</span>
                 </div>
                 {stop.isDelivered && (
-                    <div className="mt-2 text-xs text-white bg-green-500 px-2 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm">
+                  <div className="mt-2 text-xs text-white bg-green-500 px-2 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm">
                     Delivered!
-                    </div>
+                  </div>
                 )}
-                </div>
+              </div>
             </Popup>
-            </Marker>
-      ))}
+          </Marker>
+        ))}
 
       {/* Santa - Only render if valid */}
       {isValidCoordinate(santa.currentPosition) && (
         <>
-            <Marker 
-                position={[santa.currentPosition.lat, santa.currentPosition.lng]} 
-                icon={createCustomIcon('santa', rotationRef.current, santa.isDelivering)}
-                zIndexOffset={1000}
-            />
-            <MapController center={santa.currentPosition} isPlaying={santa.isPlaying} />
+          <Marker
+            position={[santa.currentPosition.lat, santa.currentPosition.lng]}
+            icon={createCustomIcon('santa', rotationRef.current, santa.isDelivering)}
+            zIndexOffset={1000}
+          />
+          <MapController center={santa.currentPosition} isPlaying={santa.isPlaying} />
         </>
       )}
     </MapContainer>

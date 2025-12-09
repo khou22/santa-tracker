@@ -529,7 +529,7 @@ const App: React.FC = () => {
                 </aside>
 
                 {/* Map Area */}
-                <section className="flex-1 relative h-1/2 md:h-full z-0 min-h-0">
+                <section className="flex-1 relative h-1/2 md:h-full z-0 min-h-0 bg-red-500">
                     <MapComponent stops={stops} santa={santa} />
 
                     {/* Mobile overlay for messages */}
